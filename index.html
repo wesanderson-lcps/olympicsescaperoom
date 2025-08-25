@@ -249,9 +249,17 @@
                     const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     const result = await response.json();
-                    const jsonString = result.candidates[0].content.parts[0].text;
-                    const cleanedJsonString = jsonString.replace(/```json\n?/, '').replace(/```$/, '');
-                    const parsedResult = JSON.parse(cleanedJsonString);
+                    
+                    // Robust JSON parsing
+                    const textResponse = result.candidates[0].content.parts[0].text;
+                    const startIndex = textResponse.indexOf('{');
+                    const endIndex = textResponse.lastIndexOf('}');
+                    if (startIndex === -1 || endIndex === -1) {
+                        throw new Error("AI response did not contain a valid JSON object.");
+                    }
+                    const jsonString = textResponse.substring(startIndex, endIndex + 1);
+                    const parsedResult = JSON.parse(jsonString);
+
                     if (typeof parsedResult.correct === 'boolean' && typeof parsedResult.feedback === 'string') {
                         return parsedResult;
                     } else {
