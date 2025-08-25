@@ -102,6 +102,7 @@
             opacity: 0;
             transform: translateY(-20px);
             transition: opacity 0.3s, transform 0.3s;
+            max-width: 300px;
         }
         .message-box.show {
             opacity: 1;
@@ -238,29 +239,41 @@
         async function getAiValidation(prompt) {
             const apiKey = "";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: { responseMimeType: "application/json" }
+            };
             let attempts = 0;
             while (attempts < 3) {
                 try {
                     const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     const result = await response.json();
-                    const text = result.candidates[0].content.parts[0].text.trim().toLowerCase();
-                    return text.includes('yes');
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const cleanedJsonString = jsonString.replace(/```json\n?/, '').replace(/```$/, '');
+                    const parsedResult = JSON.parse(cleanedJsonString);
+                    if (typeof parsedResult.correct === 'boolean' && typeof parsedResult.feedback === 'string') {
+                        return parsedResult;
+                    } else {
+                        throw new Error("AI response is not in the expected format.");
+                    }
                 } catch (error) {
                     attempts++;
-                    if (attempts >= 3) { console.error("AI validation failed:", error); return false; }
+                    if (attempts >= 3) {
+                        console.error("AI validation failed:", error);
+                        return { correct: false, feedback: "Sorry, I couldn't check your answer. Please try again." };
+                    }
                     await new Promise(res => setTimeout(res, 1000 * attempts));
                 }
             }
-            return false;
+            return { correct: false, feedback: "Sorry, I couldn't check your answer. Please try again." };
         }
 
         function showMessage(text, type) {
             const messageBox = document.getElementById('message-box');
             messageBox.textContent = text;
             messageBox.className = `message-box ${type} show`;
-            setTimeout(() => { messageBox.classList.remove('show'); }, 3000);
+            setTimeout(() => { messageBox.classList.remove('show'); }, 4000); // Increased time for feedback
         }
 
         function openPuzzle(puzzleNumber) { document.getElementById(`puzzle${puzzleNumber}`)?.classList.add('active'); }
@@ -271,8 +284,15 @@
             let isCorrect = false;
             const answers = puzzleData[puzzleNumber].answers;
             switch(puzzleNumber) {
-                case 1: case 3: case 5: isCorrect = Object.entries(answers).every(([id, value]) => document.getElementById(id).value === value); break;
-                case 2: const checked = Array.from(document.querySelectorAll('#puzzle2 input:checked')).map(cb => cb.value); isCorrect = checked.length === answers.length && answers.every(val => checked.includes(val)); break;
+                case 1: case 3: case 5: 
+                    isCorrect = Object.entries(answers).every(([id, value]) => document.getElementById(id).value === value); 
+                    if (isCorrect) handleCorrectAnswer(puzzleNumber); else showMessage('Not quite right. Try again!', 'error');
+                    break;
+                case 2: 
+                    const checked = Array.from(document.querySelectorAll('#puzzle2 input:checked')).map(cb => cb.value); 
+                    isCorrect = checked.length === answers.length && answers.every(val => checked.includes(val)); 
+                    if (isCorrect) handleCorrectAnswer(puzzleNumber); else showMessage('Not quite right. Try again!', 'error');
+                    break;
                 case 4: case 6:
                     const loader = document.getElementById(`loader${puzzleNumber}`);
                     const inputs = puzzleData[puzzleNumber].fields.map(f => document.getElementById(f.id));
@@ -280,13 +300,16 @@
                     loader.style.display = 'block';
                     const product = puzzleNumber === 4 ? "Self-Warming Snow Boots" : "Frost-Proof Phone Case";
                     const userInputs = inputs.map(i => `${i.previousElementSibling.textContent} ${i.value}`).join('\n');
-                    const prompt = `A student is creating a marketing plan for a product called "${product}". Here is their plan:\n${userInputs}\n\nIs this plan logical and complete for a high school marketing class? Respond with only "yes" or "no".`;
-                    isCorrect = await getAiValidation(prompt);
+                    const prompt = `A student is creating a marketing plan for a product called "${product}". Here is their plan:\n${userInputs}\n\nEvaluate this plan for a high school marketing class. Is it logical and complete? Respond with a JSON object with two keys: "correct" (a boolean, true if the plan is acceptable, false otherwise) and "feedback" (a string). If correct, the feedback should be a short praise like "Great plan!". If incorrect, the feedback should be a brief, helpful tip on what to improve, without giving the answer away (e.g., "Your promotion ideas are a bit generic. Can you think of a more specific channel?").`;
+                    const validationResult = await getAiValidation(prompt);
                     loader.style.display = 'none';
+                    if (validationResult.correct) {
+                        handleCorrectAnswer(puzzleNumber);
+                    } else {
+                        showMessage(validationResult.feedback, 'error');
+                    }
                     break;
             }
-            if (isCorrect) handleCorrectAnswer(puzzleNumber);
-            else showMessage('Not quite right. Try again!', 'error');
         }
         
         function handleCorrectAnswer(puzzleNumber) {
@@ -330,39 +353,27 @@
             canvas.width = 800;
             canvas.height = 600;
             const ctx = canvas.getContext('2d');
-
-            // Background
             const gradient = ctx.createLinearGradient(0, 0, 800, 600);
             gradient.addColorStop(0, '#0d1b2a');
             gradient.addColorStop(1, '#415a77');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, 800, 600);
-
-            // Title
             ctx.fillStyle = 'white';
             ctx.font = 'bold 48px Poppins';
             ctx.textAlign = 'center';
             ctx.fillText('Certificate of Completion', 400, 80);
-
-            // Subtitle
             ctx.font = '24px Poppins';
             ctx.fillText('Awarded for completing the', 400, 140);
             ctx.font = 'bold 28px Poppins';
             ctx.fillText('Winter Olympics Marketing Escape Room', 400, 180);
-
-            // Name
             ctx.font = 'italic 36px Poppins';
-            ctx.fillStyle = '#F4C300'; // Yellow
+            ctx.fillStyle = '#F4C300';
             ctx.fillText(name, 400, 280);
-
-            // Time
             ctx.fillStyle = 'white';
             ctx.font = '24px Poppins';
             ctx.fillText('With a final time of', 400, 350);
             ctx.font = 'bold 40px Poppins';
             ctx.fillText(gameState.finalTime, 400, 400);
-            
-            // Rings
             const ringColors = ['#0085C7', '#000000', '#DF0024', '#F4C300', '#009F3D'];
             const ringPositions = [{x: 320, y: 480}, {x: 380, y: 480}, {x: 440, y: 480}, {x: 350, y: 510}, {x: 410, y: 510}];
             ctx.lineWidth = 8;
@@ -372,8 +383,6 @@
                 ctx.arc(ringPositions[i].x, ringPositions[i].y, 25, 0, 2 * Math.PI);
                 ctx.stroke();
             }
-
-            // Download
             const link = document.createElement('a');
             link.download = 'Winter_Olympics_Certificate.png';
             link.href = canvas.toDataURL();
