@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Winter Olympics Marketing Escape Room</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+            color: #e0e1dd;
+        }
+        #timer {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            z-index: 100;
+        }
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background-color: #1b263b;
+            border: 2px solid #778da9;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        .modal-backdrop.active .modal-content {
+            transform: scale(1);
+        }
+        .olympic-ring {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 6px solid;
+            opacity: 0.3;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .olympic-ring.earned {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        .ring-blue { border-color: #0085C7; }
+        .ring-yellow { border-color: #F4C300; }
+        .ring-black { border-color: #000000; }
+        .ring-green { border-color: #009F3D; }
+        .ring-red { border-color: #DF0024; }
+        .ring-purple { border-color: #8A2BE2; }
+
+        .btn {
+            transition: background-color 0.3s, transform 0.3s;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+        }
+        .btn-primary {
+            background-color: #415a77;
+        }
+        .btn-primary:hover {
+            background-color: #778da9;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        .btn-secondary:hover {
+             background-color: #5a6268;
+             transform: translateY(-2px);
+        }
+        .message-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            color: white;
+            z-index: 100;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .message-box.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .message-box.success { background-color: #28a745; }
+        .message-box.error { background-color: #dc3545; }
+        .message-box.info { background-color: #17a2b8; }
+        .ai-loader {
+            display: none;
+            margin-top: 1rem;
+            color: #a0aec0;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div id="timer">00:00</div>
+    <div id="message-box" class="message-box"></div>
+
+    <div class="w-full max-w-4xl text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-2 text-white drop-shadow-lg">Winter Olympics Marketing</h1>
+        <h2 class="text-5xl md:text-6xl font-bold text-white drop-shadow-lg mb-6">Escape Room</h2>
+        <p class="text-lg mb-8 max-w-2xl mx-auto">Welcome, marketing expert! Your mission is to solve a series of puzzles to collect all six Olympic Rings. Once you have them all, you'll receive the final clue to escape. Good luck!</p>
+
+        <div class="flex justify-center items-center space-x-2 md:space-x-4 mb-8">
+            <div id="ring-red" class="olympic-ring ring-red" title="Red Ring"></div>
+            <div id="ring-blue" class="olympic-ring ring-blue" title="Blue Ring"></div>
+            <div id="ring-green" class="olympic-ring ring-green" title="Green Ring"></div>
+            <div id="ring-yellow" class="olympic-ring ring-yellow" title="Yellow Ring"></div>
+            <div id="ring-black" class="olympic-ring ring-black" title="Black Ring"></div>
+            <div id="ring-purple" class="olympic-ring ring-purple" title="Purple Ring"></div>
+        </div>
+
+        <button id="startButton" class="btn btn-primary text-white font-bold py-3 px-8 text-xl shadow-lg">
+            Start the Challenge
+        </button>
+    </div>
+
+    <!-- Puzzles 1-6 -->
+    <div id="puzzle1" class="modal-backdrop"><div class="modal-content w-11/12 max-w-2xl p-6 rounded-lg shadow-2xl"><h3 class="text-2xl font-bold mb-4">Puzzle 1: Winter Branding Match-Up</h3><p class="mb-6">Match each brand to its product category. Get all five correct to earn the Red Olympic Ring!</p><div class="space-y-4"></div><div class="flex gap-4 mt-6"><button onclick="restartPuzzle(1)" class="btn btn-secondary w-1/2">Restart Puzzle</button><button onclick="checkPuzzle(1)" class="btn btn-primary w-1/2">Submit Answer</button></div></div></div>
+    <div id="puzzle2" class="modal-backdrop"><div class="modal-content w-11/12 max-w-lg p-6 rounded-lg shadow-2xl"><h3 class="text-2xl font-bold mb-4">Puzzle 2: Slogan Sort</h3><p class="mb-6">Select the 4 real Olympic slogans to earn your Blue Olympic Ring!</p><div id="puzzle2-options" class="space-y-3 text-left"></div><div class="flex gap-4 mt-6"><button onclick="restartPuzzle(2)" class="btn btn-secondary w-1/2">Restart Puzzle</button><button onclick="checkPuzzle(2)" class="btn btn-primary w-1/2">Submit Answer</button></div></div></div>
+    <div id="puzzle3" class="modal-backdrop"><div class="modal-content w-11/12 max-w-3xl p-6 rounded-lg shadow-2xl"><h3 class="text-2xl font-bold mb-4">Puzzle 3: Audience Match Game</h3><p class="mb-6">Match each product with its best customer audience to earn the Green Olympic Ring!</p><div class="space-y-4"></div><div class="flex gap-4 mt-6"><button onclick="restartPuzzle(3)" class="btn btn-secondary w-1/2">Restart Puzzle</button><button onclick="checkPuzzle(3)" class="btn btn-primary w-1/2">Submit Answer</button></div></div></div>
+    <div id="puzzle4" class="modal-backdrop"><div class="modal-content w-11/12 max-w-2xl p-6 rounded-lg shadow-2xl"><h3 class="text-2xl font-bold mb-4">Puzzle 4: The 5 Ps Challenge</h3><p class="mb-6">Your product is "Self-Warming Snow Boots." Fill in the marketing strategy below. A logical, complete plan earns the Yellow Ring!</p><div class="space-y-4 text-left"></div><div class="ai-loader" id="loader4">Checking with AI...</div><div class="flex gap-4 mt-6"><button onclick="restartPuzzle(4)" class="btn btn-secondary w-1/2">Restart Puzzle</button><button onclick="checkPuzzle(4)" class="btn btn-primary w-1/2">Submit Strategy</button></div></div></div>
+    <div id="puzzle5" class="modal-backdrop"><div class="modal-content w-11/12 max-w-2xl p-6 rounded-lg shadow-2xl"><h3 class="text-2xl font-bold mb-4">Puzzle 5: Promotion Relay</h3><p class="mb-6">Match each ad concept to its best promotional channel to win the Black Ring!</p><div class="space-y-4"></div><div class="flex gap-4 mt-6"><button onclick="restartPuzzle(5)" class="btn btn-secondary w-1/2">Restart Puzzle</button><button onclick="checkPuzzle(5)" class="btn btn-primary w-1/2">Submit Matches</button></div></div></div>
+    <div id="puzzle6" class="modal-backdrop"><div class="modal-content w-11/12 max-w-2xl p-6 rounded-lg shadow-2xl"><h3 class="text-2xl font-bold mb-4">Puzzle 6: Cold Campaign Creators</h3><p class="mb-6">Your product is a "Frost-Proof Phone Case." Create a short campaign. A complete plan earns the Purple Ring!</p><div class="space-y-4 text-left"></div><div class="ai-loader" id="loader6">Checking with AI...</div><div class="flex gap-4 mt-6"><button onclick="restartPuzzle(6)" class="btn btn-secondary w-1/2">Restart Puzzle</button><button onclick="checkPuzzle(6)" class="btn btn-primary w-1/2">Submit Campaign</button></div></div></div>
+
+    <!-- Final Clue -->
+    <div id="finalClue" class="modal-backdrop">
+        <div class="modal-content w-11/12 max-w-lg p-8 rounded-lg shadow-2xl text-center">
+            <h3 class="text-3xl font-bold mb-4 text-yellow-300">Congratulations!</h3>
+            <p class="mb-6 text-lg">You've collected all the rings! Now find the torch!</p>
+            <div class="bg-gray-900 p-6 rounded-lg border-2 border-yellow-300">
+                <h4 class="text-xl font-semibold mb-2">Here is your final clue:</h4>
+                <p class="text-2xl font-mono tracking-widest">"Where snow never falls and banners hang tall, The torch rests hidden behind the wall."</p>
+            </div>
+             <button id="stopTimerBtn" onclick="stopTimerAndShowCertificate()" class="btn btn-primary w-full mt-8 py-2 rounded-lg font-semibold">I found the torch! (Stop Timer)</button>
+        </div>
+    </div>
+    
+    <!-- Certificate Modal -->
+    <div id="certificateModal" class="modal-backdrop">
+        <div class="modal-content w-11/12 max-w-lg p-8 rounded-lg shadow-2xl text-center">
+            <h3 class="text-3xl font-bold mb-4 text-yellow-300">Challenge Complete!</h3>
+            <p class="text-lg mb-2">Your final time is:</p>
+            <p id="finalTime" class="text-4xl font-bold mb-6">00:00</p>
+            <div class="mb-4">
+                <label for="studentName" class="block mb-2 font-semibold">Enter your name for the certificate:</label>
+                <input type="text" id="studentName" class="bg-gray-700 text-white p-2 rounded w-full text-center" placeholder="Your Name">
+            </div>
+            <button onclick="downloadCertificate()" class="btn btn-primary w-full py-2 rounded-lg font-semibold">Download Certificate</button>
+            <button onclick="resetGame()" class="btn btn-secondary w-full mt-4 py-2 rounded-lg font-semibold">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const puzzleOrder = [1, 2, 3, 4, 5, 6]; 
+        let currentPuzzleIndex = 0;
+        const gameState = {
+            ringsEarned: [],
+            timerInterval: null,
+            startTime: 0,
+            finalTime: "00:00"
+        };
+
+        // --- Puzzle Data & Answers ---
+        const puzzleData = {
+            1: { questions: [ { id: 'q1-nike', text: 'NIKE' }, { id: 'q1-visa', text: 'VISA' }, { id: 'q1-nbc', text: 'NBC' }, { id: 'q1-omega', text: 'OMEGA' }, { id: 'q1-target', text: 'TARGET' } ], options: ['Sportswear', 'Credit Card', 'Television Network', 'Timekeeper of Olympics', 'Retail Store'], answers: { 'q1-nike': 'Sportswear', 'q1-visa': 'Credit Card', 'q1-nbc': 'Television Network', 'q1-omega': 'Timekeeper of Olympics', 'q1-target': 'Retail Store' } },
+            2: { options: [ { value: '1', text: 'Citius, Altius, Fortius' }, { value: '2', text: 'Light the Fire Within' }, { value: '3', text: 'Chill. Compete. Repeat.' }, { value: '4', text: 'Gold Dreams in Cold Teams.' }, { value: '5', text: 'Passion. Connected.' }, { value: '6', text: 'Faster, Higher, Stronger - Together.' } ], answers: ['1', '2', '5', '6'] },
+            3: { questions: [ { id: 'q3-1', text: 'Eco-Friendly Snow Goggles' }, { id: 'q3-2', text: 'Luxury Ski Lodge Package' }, { id: 'q3-3', text: 'Budget Family Snow Trip' }, { id: 'q3-4', text: 'Olympic Athlete Protein Snack Pack' }, { id: 'q3-5', text: 'Cozy Winter Beanie Collection' }, { id: 'q3-6', text: 'Interactive Snow Day Activity Kit' } ], options: [ { value: 'A', text: 'Style-conscious college students' }, { value: 'B', text: 'Wealthy vacationers' }, { value: 'C', text: 'Elementary school families' }, { value: 'D', text: 'Fitness-obsessed teens' }, { value: 'E', text: 'Eco-conscious teens' }, { value: 'F', text: 'Families with school-age kids' } ], answers: { 'q3-1': 'E', 'q3-2': 'B', 'q3-3': 'F', 'q3-4': 'D', 'q3-5': 'A', 'q3-6': 'C' } },
+            4: { fields: [ { id: 'p4-desc', label: 'Product Description:', placeholder: 'Describe the key features.' }, { id: 'p4-price', label: 'Price Point:', placeholder: 'What is the price?' }, { id: 'p4-place', label: 'Place (3 examples):', placeholder: 'Where will it be sold? (List 3)' }, { id: 'p4-promo', label: 'Promotion (3 examples):', placeholder: 'How will you advertise it? (List 3)' }, { id: 'p4-people', label: 'People (Target Market):', placeholder: 'Who is your target customer?' } ], answers: ['p4-desc', 'p4-price', 'p4-place', 'p4-promo', 'p4-people'] },
+            5: { questions: [ { id: 'q5-1', text: 'A. Snowboarder trick highlight' }, { id: 'q5-2', text: 'B. Cozy lodge photo with tagline' }, { id: 'q5-3', text: 'C. Eco boot review by influencer' }, { id: 'q5-4', text: 'D. Olympic athlete endorsement post' } ], options: ['Magazine Ad', 'Instagram Post', 'TikTok', 'Billboard'], answers: { 'q5-1': 'TikTok', 'q5-2': 'Magazine Ad', 'q5-3': 'Instagram Post', 'q5-4': 'Billboard' } },
+            6: { fields: [ { id: 'p6-demographics', label: 'Audience Demographics:', placeholder: 'Age, gender, income, etc.' }, { id: 'p6-psychographics', label: 'Audience Psychographics:', placeholder: 'Lifestyle, values, interests, etc.' }, { id: 'p6-geographics', label: 'Audience Geographics:', placeholder: 'Where do they live?' }, { id: 'p6-slogan', label: 'Slogan (max 8 words):', placeholder: 'Create a catchy slogan.' }, { id: 'p6-channels', label: 'Promotion Channels (choose 3):', placeholder: 'List 3 channels to reach them.' } ], answers: ['p6-demographics', 'p6-psychographics', 'p6-geographics', 'p6-slogan', 'p6-channels'] }
+        };
+        
+        const ringMap = { 1: 'red', 2: 'blue', 3: 'green', 4: 'yellow', 5: 'black', 6: 'purple' };
+        const startButton = document.getElementById('startButton');
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function generatePuzzleHTML() {
+            [1, 3, 5].forEach(num => {
+                const data = puzzleData[num];
+                const container = document.querySelector(`#puzzle${num} .space-y-4`);
+                container.innerHTML = '';
+                const shuffledOptions = [...data.options];
+                shuffleArray(shuffledOptions);
+                data.questions.forEach(q => {
+                    const optionsHTML = shuffledOptions.map(opt => {
+                        const value = typeof opt === 'object' ? opt.value : opt;
+                        const text = typeof opt === 'object' ? opt.text : opt;
+                        return `<option value="${value}">${text}</option>`;
+                    }).join('');
+                    container.innerHTML += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center"><div class="font-semibold">${q.text}</div><select id="${q.id}" class="bg-gray-700 text-white p-2 rounded w-full"><option value="">Select...</option>${optionsHTML}</select></div>`;
+                });
+            });
+            const p2Container = document.getElementById('puzzle2-options');
+            const shuffledP2Options = [...puzzleData[2].options];
+            shuffleArray(shuffledP2Options);
+            p2Container.innerHTML = shuffledP2Options.map(opt => `<label class="flex items-center p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600"><input type="checkbox" name="slogan" value="${opt.value}" class="mr-3 h-5 w-5"> ${opt.text}</label>`).join('');
+            [4, 6].forEach(num => {
+                const data = puzzleData[num];
+                const container = document.querySelector(`#puzzle${num} .space-y-4`);
+                container.innerHTML = data.fields.map(field => `<div><label class="font-semibold">${field.label}</label><input id="${field.id}" type="text" class="bg-gray-700 text-white p-2 rounded w-full mt-1" placeholder="${field.placeholder}"></div>`).join('');
+            });
+        }
+
+        async function getAiValidation(prompt) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            let attempts = 0;
+            while (attempts < 3) {
+                try {
+                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const result = await response.json();
+                    const text = result.candidates[0].content.parts[0].text.trim().toLowerCase();
+                    return text.includes('yes');
+                } catch (error) {
+                    attempts++;
+                    if (attempts >= 3) { console.error("AI validation failed:", error); return false; }
+                    await new Promise(res => setTimeout(res, 1000 * attempts));
+                }
+            }
+            return false;
+        }
+
+        function showMessage(text, type) {
+            const messageBox = document.getElementById('message-box');
+            messageBox.textContent = text;
+            messageBox.className = `message-box ${type} show`;
+            setTimeout(() => { messageBox.classList.remove('show'); }, 3000);
+        }
+
+        function openPuzzle(puzzleNumber) { document.getElementById(`puzzle${puzzleNumber}`)?.classList.add('active'); }
+        function closePuzzle(puzzleNumber) { document.getElementById(`puzzle${puzzleNumber}`)?.classList.remove('active'); }
+        function updateRingsDisplay() { gameState.ringsEarned.forEach(ringColor => { document.getElementById(`ring-${ringColor}`)?.classList.add('earned'); }); }
+        
+        async function checkPuzzle(puzzleNumber) {
+            let isCorrect = false;
+            const answers = puzzleData[puzzleNumber].answers;
+            switch(puzzleNumber) {
+                case 1: case 3: case 5: isCorrect = Object.entries(answers).every(([id, value]) => document.getElementById(id).value === value); break;
+                case 2: const checked = Array.from(document.querySelectorAll('#puzzle2 input:checked')).map(cb => cb.value); isCorrect = checked.length === answers.length && answers.every(val => checked.includes(val)); break;
+                case 4: case 6:
+                    const loader = document.getElementById(`loader${puzzleNumber}`);
+                    const inputs = puzzleData[puzzleNumber].fields.map(f => document.getElementById(f.id));
+                    if (inputs.some(i => i.value.trim() === '')) { showMessage('Please fill out all fields.', 'error'); return; }
+                    loader.style.display = 'block';
+                    const product = puzzleNumber === 4 ? "Self-Warming Snow Boots" : "Frost-Proof Phone Case";
+                    const userInputs = inputs.map(i => `${i.previousElementSibling.textContent} ${i.value}`).join('\n');
+                    const prompt = `A student is creating a marketing plan for a product called "${product}". Here is their plan:\n${userInputs}\n\nIs this plan logical and complete for a high school marketing class? Respond with only "yes" or "no".`;
+                    isCorrect = await getAiValidation(prompt);
+                    loader.style.display = 'none';
+                    break;
+            }
+            if (isCorrect) handleCorrectAnswer(puzzleNumber);
+            else showMessage('Not quite right. Try again!', 'error');
+        }
+        
+        function handleCorrectAnswer(puzzleNumber) {
+            showMessage('Correct! You\'ve earned a ring!', 'success');
+            closePuzzle(puzzleNumber);
+            const ringColor = ringMap[puzzleNumber];
+            if (!gameState.ringsEarned.includes(ringColor)) { gameState.ringsEarned.push(ringColor); updateRingsDisplay(); }
+            if (gameState.ringsEarned.length === 6) { setTimeout(() => document.getElementById('finalClue').classList.add('active'), 500); }
+            else { currentPuzzleIndex++; if (currentPuzzleIndex < puzzleOrder.length) { setTimeout(() => openPuzzle(puzzleOrder[currentPuzzleIndex]), 500); } }
+        }
+
+        function restartPuzzle(puzzleNumber) {
+            const p = document.getElementById(`puzzle${puzzleNumber}`);
+            p.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+            p.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+            p.querySelectorAll('input[type="text"]').forEach(i => i.value = '');
+            showMessage('Puzzle has been reset.', 'info');
+        }
+
+        function startTimer() {
+            gameState.startTime = Date.now();
+            gameState.timerInterval = setInterval(() => {
+                const elapsedTime = Math.floor((Date.now() - gameState.startTime) / 1000);
+                const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
+                const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+                document.getElementById('timer').textContent = `${minutes}:${seconds}`;
+            }, 1000);
+        }
+
+        function stopTimerAndShowCertificate() {
+            clearInterval(gameState.timerInterval);
+            gameState.finalTime = document.getElementById('timer').textContent;
+            document.getElementById('finalTime').textContent = gameState.finalTime;
+            closePuzzle('finalClue');
+            document.getElementById('certificateModal').classList.add('active');
+        }
+
+        function downloadCertificate() {
+            const name = document.getElementById('studentName').value || 'Marketing Champion';
+            const canvas = document.createElement('canvas');
+            canvas.width = 800;
+            canvas.height = 600;
+            const ctx = canvas.getContext('2d');
+
+            // Background
+            const gradient = ctx.createLinearGradient(0, 0, 800, 600);
+            gradient.addColorStop(0, '#0d1b2a');
+            gradient.addColorStop(1, '#415a77');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 800, 600);
+
+            // Title
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 48px Poppins';
+            ctx.textAlign = 'center';
+            ctx.fillText('Certificate of Completion', 400, 80);
+
+            // Subtitle
+            ctx.font = '24px Poppins';
+            ctx.fillText('Awarded for completing the', 400, 140);
+            ctx.font = 'bold 28px Poppins';
+            ctx.fillText('Winter Olympics Marketing Escape Room', 400, 180);
+
+            // Name
+            ctx.font = 'italic 36px Poppins';
+            ctx.fillStyle = '#F4C300'; // Yellow
+            ctx.fillText(name, 400, 280);
+
+            // Time
+            ctx.fillStyle = 'white';
+            ctx.font = '24px Poppins';
+            ctx.fillText('With a final time of', 400, 350);
+            ctx.font = 'bold 40px Poppins';
+            ctx.fillText(gameState.finalTime, 400, 400);
+            
+            // Rings
+            const ringColors = ['#0085C7', '#000000', '#DF0024', '#F4C300', '#009F3D'];
+            const ringPositions = [{x: 320, y: 480}, {x: 380, y: 480}, {x: 440, y: 480}, {x: 350, y: 510}, {x: 410, y: 510}];
+            ctx.lineWidth = 8;
+            for(let i = 0; i < 5; i++) {
+                ctx.strokeStyle = ringColors[i];
+                ctx.beginPath();
+                ctx.arc(ringPositions[i].x, ringPositions[i].y, 25, 0, 2 * Math.PI);
+                ctx.stroke();
+            }
+
+            // Download
+            const link = document.createElement('a');
+            link.download = 'Winter_Olympics_Certificate.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function initializeGame() {
+            currentPuzzleIndex = 0;
+            generatePuzzleHTML();
+            gameState.ringsEarned = [];
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            document.getElementById('timer').textContent = '00:00';
+            document.querySelectorAll('.olympic-ring').forEach(ring => ring.classList.remove('earned'));
+            document.querySelectorAll('.modal-backdrop').forEach(modal => modal.classList.remove('active'));
+            startButton.style.display = 'block';
+        }
+
+        function resetGame() {
+            document.getElementById('certificateModal').classList.remove('active');
+            initializeGame();
+        }
+
+        startButton.addEventListener('click', () => {
+            currentPuzzleIndex = 0;
+            openPuzzle(puzzleOrder[currentPuzzleIndex]);
+            startButton.style.display = 'none';
+            startTimer();
+        });
+
+        window.onload = initializeGame;
+    </script>
+</body>
+</html>
